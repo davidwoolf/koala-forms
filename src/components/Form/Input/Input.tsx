@@ -6,49 +6,55 @@ import { FormContext } from "@/utils/contexts/form.context";
 
 // utilities
 import { validateFormField } from "@/utils/validation/form-field";
+import { checkRequiredStatus } from "@/utils/fields/checkRequiredStatus";
 
 // Components
 import { Input } from "@/components/Fields";
 
 const FormInput = (props) => {
-  const { name, required = false, value = "", validateAs = null } = props;
+  const { name, required = false, validateAs = null, value } = props;
 
-  const [{ errors }, dispatch] = useContext(FormContext);
+  const [{ errors, reviewErrors }, dispatch] = useContext(FormContext);
 
-  // useEffect(() => {
-  //   dispatch({
-  //     type: "SET_VALUE",
-  //     id: name,
-  //     value,
-  //   });
-  // }, [value]);
+  useEffect(
+    () =>
+      checkRequiredStatus({
+        name,
+        value: value ?? "",
+        required,
+        dispatch,
+      }),
+    []
+  );
 
   return (
     <Input
       {...props}
-      // onChange={(value) => {
-      //   dispatch({
-      //     type: "SET_VALUE",
-      //     id: name,
-      //     value,
-      //   });
-      // }}
-      onBlur={(event) => {
-        validateFormField(
+      onBlur={(event: React.FormEvent<HTMLInputElement>) => {
+        const value = event?.currentTarget.value ?? "";
+        const validation = validateFormField(name, value, validateAs);
+
+        checkRequiredStatus({
           name,
-          event?.target.value,
-          validateAs,
+          value,
           required,
-          dispatch
-        );
-      }}
-      onFocus={() => {
-        dispatch({
-          type: "REMOVE_ERROR",
-          id: name,
+          dispatch,
         });
+
+        if (validation !== null) {
+          dispatch({
+            type: "SET_ERROR",
+            value: [
+              {
+                id: name,
+                type: "error",
+                message: validation,
+              },
+            ],
+          });
+        }
       }}
-      invalid={errors.includes(name)}
+      invalid={reviewErrors && errors.find((error) => error.id === name)}
     />
   );
 };

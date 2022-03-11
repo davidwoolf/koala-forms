@@ -1,4 +1,5 @@
 import _debounce from "lodash/debounce";
+import type * as Stitches from "@stitches/react";
 
 // Styles
 import { Wrapper, Label, Outline } from "../Generic/Generic.styles";
@@ -7,13 +8,19 @@ import { Element } from "./Textarea.styles";
 // Utils
 import { usePathOutline } from "@/utils/fields/usePathOutline";
 
-const getUnfocusedPathDimensions = (pathBounds: DOMRect) => {
-  return `M9 1 H${pathBounds.width - 9} a8,8 0 0 1 8,8 V${
-    pathBounds.height - 9
-  } a8,8 0 0 1 -8,8 H9 a8,8 0 0 1 -8,-8 V9 a8,8 0 0 1 8,-8 Z`;
-};
+interface ComponentProps {
+  css: Stitches.CSS;
+  onBlur: React.FormEventHandler<HTMLInputElement>;
+  onChange: React.FormEventHandler<HTMLInputElement>;
+  onFocus: React.FormEventHandler<HTMLInputElement>;
+  description?: string;
+  dir?: string;
+  label?: string;
+  sublabel?: string;
+  invalid?: boolean;
+}
 
-const Textarea = (props) => {
+const Textarea: React.FC<ComponentProps> = (props) => {
   const {
     css = {},
     dir = "ltr",
@@ -27,18 +34,13 @@ const Textarea = (props) => {
     ...otherProps
   } = props;
 
-  const { inputRef, labelRef, focus, setFocus, bounds, path } =
-    usePathOutline();
+  const { containerRef, labelRef, focus, setFocus, bounds, path } =
+    usePathOutline(true);
 
   return (
-    <Wrapper css={css} dir={dir}>
+    <Wrapper css={css} dir={dir} ref={containerRef}>
       {label && (
-        <Label
-          isFocused={focus}
-          ref={labelRef}
-          onClick={() => inputRef.current?.focus()}
-          hasError={invalid}
-        >
+        <Label isFocused={focus} ref={labelRef} hasError={invalid}>
           {label}
         </Label>
       )}
@@ -57,7 +59,6 @@ const Textarea = (props) => {
 
       <Element
         {...otherProps}
-        ref={inputRef}
         dir={dir}
         hasError={invalid}
         onFocus={(event) => {

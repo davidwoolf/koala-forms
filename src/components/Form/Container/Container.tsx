@@ -7,77 +7,51 @@ import { FormContext, getFormData } from "@/utils/contexts/form.context";
 // Styles
 import { Element } from "./Container.styles";
 
+// Types
+import type * as Stitches from "@stitches/react";
+interface FormProps {
+  children: any;
+  css: Stitches.CSS;
+  onChange: (data: any) => void;
+  onSubmit: (data: any) => void;
+}
+
 const reducer = (state, action) => {
   switch (action.type) {
-    case "SET_VALUE":
-      return {
-        ...state,
-        values: {
-          ...state.values,
-          [action.id]: action.value,
-        },
-      };
-    case "SET_CHECKBOX":
-      const values = _get(state, `values.${action.id}`, []).filter(
-        (value) => value !== action.value
-      );
-
-      return {
-        ...state,
-        values: {
-          ...state.values,
-          [action.id]: action.checked ? values.concat([action.value]) : values,
-        },
-      };
     case "SET_ERROR":
       return {
         ...state,
         errors: state.errors
-          .filter((id) => id !== action.id)
-          .concat([action.id]),
+          .filter((error) => error.id !== action.value.name)
+          .concat([action.value]),
       };
     case "REMOVE_ERROR":
       return {
         ...state,
-        errors: state.errors.filter((id) => id !== action.id),
+        errors: state.errors.filter((error) => error.id !== action.id),
       };
-    // case "SUBMIT_FORM":
-    //   return {
-    //     ...state,
-    //     submit_form: action.value,
-    //   };
+    case "SET_SUBMITTING":
+      return {
+        ...state,
+        submittingForm: action.value,
+      };
+    case "SET_REVIEW_ERRORS":
+      return {
+        ...state,
+        reviewErrors: action.value,
+      };
     default:
       throw new Error();
   }
 };
 
-const FormElement = ({ children, css, onChange, onSubmit }) => {
-  const [{ values, errors, submit_form }, dispatch] = useContext(FormContext);
-
-  useEffect(() => {
-    let timer = null;
-
-    if (onChange) {
-      timer = setTimeout(() => {
-        onChange(values, errors);
-      }, 300);
-    }
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [values]);
-
-  // useEffect(() => {
-  //   if (submit_form) {
-  //     onSubmit && onSubmit(values, errors);
-
-  //     dispatch({
-  //       type: "SUBMIT_FORM",
-  //       value: false,
-  //     });
-  //   }
-  // }, [submit_form]);
+const FormElement: React.FC<FormProps> = ({
+  children,
+  css,
+  onChange,
+  onSubmit,
+}) => {
+  const [{ errors, submittingForm }, dispatch] = useContext(FormContext);
 
   return (
     <Element
@@ -85,28 +59,48 @@ const FormElement = ({ children, css, onChange, onSubmit }) => {
       onSubmit={(e) => {
         e.preventDefault();
 
-        onSubmit &&
+        if (errors.length) {
+          dispatch({
+            type: "SET_REVIEW_ERRORS",
+            value: true,
+          });
+        } else {
+          dispatch({
+            type: "SET_REVIEW_ERRORS",
+            value: false,
+          });
+
+          dispatch({
+            type: "SET_SUBMITTING",
+            value: true,
+          });
+
           onSubmit({
             data: getFormData(e.target),
             errors,
+            setSubmitting: (value) => {
+              dispatch({
+                type: "SET_SUBMITTING",
+                value,
+              });
+            },
           });
+        }
       }}
     >
-      {children}
+      {children({
+        isSubmitting: submittingForm,
+        isLoadingFields: false,
+      })}
     </Element>
   );
 };
 
-const Form = ({
-  children,
-  css = {},
-  onChange = undefined,
-  onSubmit = undefined,
-}) => {
+const Form: React.FC<FormProps> = (props) => {
   let [state, dispatch] = useReducer(reducer, {
     values: {},
     errors: [],
-    submit_form: false,
+    isSubmitting: false,
   });
 
   let formProvider = useMemo(() => {
@@ -115,9 +109,7 @@ const Form = ({
 
   return (
     <FormContext.Provider value={formProvider}>
-      <FormElement css={css} onChange={onChange} onSubmit={onSubmit}>
-        {children}
-      </FormElement>
+      <FormElement {...props} />
     </FormContext.Provider>
   );
 };

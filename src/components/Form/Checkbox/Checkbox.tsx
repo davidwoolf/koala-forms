@@ -8,34 +8,11 @@ import { FormContext } from "@/utils/contexts/form.context";
 import { Checkbox } from "@/components/Fields";
 
 const FormCheckbox = (props) => {
-  const { name, value, checked = false } = props;
+  const { name } = props;
 
-  const [{ values, errors }, dispatch] = useContext(FormContext);
+  const [{ errors }] = useContext(FormContext);
 
-  useEffect(() => {
-    dispatch({
-      type: "SET_CHECKBOX",
-      id: name,
-      checked,
-      value,
-    });
-  }, [checked]);
-
-  return (
-    <Checkbox
-      {...props}
-      onClick={(checked) => {
-        dispatch({
-          type: "SET_CHECKBOX",
-          id: name,
-          checked,
-          value,
-        });
-      }}
-      invalid={_get(errors, name, false)}
-      checked={_get(values, name, []).includes(value)}
-    />
-  );
+  return <Checkbox {...props} invalid={_get(errors, name, false)} />;
 };
 
 export default FormCheckbox;

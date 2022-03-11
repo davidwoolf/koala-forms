@@ -6,14 +6,22 @@ export const getFormData = (target: HTMLFormElement) => {
   const formData = new FormData(target);
   let entries = {};
 
+  // This needs to be refactored
   for (var p of formData) {
     let name = p[0];
     let value = p[1];
 
-    entries = {
-      ...entries,
-      [name]: value,
-    };
+    if (name in entries) {
+      entries = {
+        ...entries,
+        [name]: [entries[name]].flat().concat([value]),
+      };
+    } else {
+      entries = {
+        ...entries,
+        [name]: value,
+      };
+    }
   }
 
   return entries;

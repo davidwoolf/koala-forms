@@ -4,34 +4,36 @@ import _get from "lodash/get";
 // store
 import { FormContext } from "@/utils/contexts/form.context";
 
+// utilities
+import { validateFormField } from "@/utils/validation/form-field";
+
 // Components
 import { Select } from "@/components/Fields";
 
 const FormSelect = (props) => {
-  const { children, name, value = false } = props;
+  const { children, name, required = false, validateAs = null } = props;
 
-  const [{ values, errors }, dispatch] = useContext(FormContext);
-
-  useEffect(() => {
-    dispatch({
-      type: "SET_VALUE",
-      id: name,
-      value,
-    });
-  }, [value]);
+  const [{ errors }, dispatch] = useContext(FormContext);
 
   return (
     <Select
       {...props}
-      onChange={(value) => {
+      onBlur={(event: React.FormEvent<HTMLInputElement>) => {
+        validateFormField(
+          name,
+          event?.current.value,
+          validateAs,
+          required,
+          dispatch
+        );
+      }}
+      onFocus={() => {
         dispatch({
-          type: "SET_VALUE",
+          type: "REMOVE_ERROR",
           id: name,
-          value,
         });
       }}
       invalid={_get(errors, name, false)}
-      value={_get(values, name, "")}
     >
       {children}
     </Select>

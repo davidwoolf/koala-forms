@@ -1,74 +1,95 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
+import type * as Stitches from "@stitches/react";
+
+// Utils
+import { usePathOutline } from "@/utils/fields/usePathOutline";
 
 // Components
+import { Icon } from "@/components/Icons";
 import { Text } from "@/components/Layout";
 
-import { Wrapper, SelectWrapper, Element, IconWrapper } from "./Select.styles";
+// Styles
+import { Wrapper, Label, Outline } from "../Generic/Generic.styles";
+import { Element, IconWrapper } from "./Select.styles";
 
-const Select = ({
-  children,
-  dir = "ltr",
-  name,
-  disabled = false,
-  invalid = false,
-  label = false,
-  sublabel = false,
-  onChange = undefined,
-  value = "",
-  css = {},
-}) => {
-  const [focus, setFocus] = useState(false);
-  const ref = useRef();
+interface ComponentProps {
+  css: Stitches.CSS;
+  children: HTMLOptionElement[];
+  onBlur: React.FormEventHandler<HTMLInputElement>;
+  onChange: React.FormEventHandler<HTMLInputElement>;
+  onFocus: React.FormEventHandler<HTMLInputElement>;
+  description?: string;
+  dir?: string;
+  label?: string;
+  sublabel?: string;
+  invalid?: boolean;
+}
 
-  useEffect(() => {
-    if (focus) {
-      ref.current.focus();
-    }
-  }, [focus]);
+const Select: React.FC<ComponentProps> = (props) => {
+  const {
+    children,
+    css = {},
+    dir = "ltr",
+    invalid = false,
+    label = false,
+    sublabel = false,
+    onBlur,
+    onChange,
+    onFocus,
+    ...otherProps
+  } = props;
+
+  const { containerRef, labelRef, focus, setFocus, bounds, path } =
+    usePathOutline(true);
 
   return (
-    <Wrapper css={css} onClick={() => setFocus(true)}>
+    <Wrapper css={css} dir={dir} ref={containerRef}>
       {label && (
-        <Text
-          as="label"
-          dir={dir}
-          size="label"
-          weight="medium"
-          css={{
-            color: invalid ? "$red400" : "$black900",
-            cursor: "pointer",
-          }}
-        >
+        <Label isFocused={focus} ref={labelRef} hasError={invalid}>
           {label}
-        </Text>
+        </Label>
       )}
 
-      <SelectWrapper>
-        <Element
-          ref={ref}
-          name={name}
-          disabled={disabled}
-          isDisabled={disabled}
-          onFocus={() => setFocus(true)}
-          onBlur={() => setFocus(false)}
-          onChange={(e) => {
-            onChange && onChange(e.target.value);
-          }}
-          value={value}
-        >
-          {children}
-        </Element>
+      <Outline
+        isFocused={focus}
+        width={bounds?.width}
+        hasError={invalid}
+        height={bounds?.height}
+        viewBox={`0 0 ${bounds?.width} ${bounds?.height}`}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path d={path} />
+      </Outline>
 
-        <IconWrapper>
-          <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
-            <path
-              fillRule="evenodd"
-              clipRule="evenodd"
-              d="M0.646484 1.35359L1.35359 0.646484L7.00004 6.29293L12.6465 0.646484L13.3536 1.35359L7.00004 7.70714L0.646484 1.35359Z"
-            />
-          </svg>
-        </IconWrapper>
-      </SelectWrapper>
+      <Element
+        {...otherProps}
+        onFocus={(event: React.FormEvent<HTMLInputElement>) => {
+          setFocus(true);
+
+          onFocus && onFocus(event);
+        }}
+        isFocused={focus}
+        onBlur={(event: React.FormEvent<HTMLInputElement>) => {
+          setFocus(event.currentTarget.value !== "0" ? true : false);
+
+          onBlur && onBlur(event);
+        }}
+        onChange={(event: React.FormEvent<HTMLInputElement>) => {
+          onChange && onChange(event);
+        }}
+      >
+        <option value="0">— Select a value —</option>
+        {children}
+      </Element>
+
+      <IconWrapper>
+        <Icon.CaretDown
+          css={{
+            stroke: focus ? "$primary" : "$black600",
+          }}
+        />
+      </IconWrapper>
 
       {sublabel && (
         <Text
